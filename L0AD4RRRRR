@@ -1,0 +1,406 @@
+-- terms agreement and hub maker general checker
+local HttpService = game:GetService("HttpService")
+local TweenService = game:GetService("TweenService")
+
+local function encodeData(data)
+	local success, errorcode = pcall(HttpService.JSONEncode, HttpService, data)
+	if not success then
+		return false, "failed"
+	end
+	return errorcode
+end
+
+local function decodeData(data)
+	local success, errorcode = pcall(HttpService.JSONDecode, HttpService, data)
+	if not success then
+		return false, "failed"
+	end
+	return errorcode
+end
+
+function hasProperty(object, propertyName)
+	local success, _ = pcall(function() 
+		object[propertyName] = object[propertyName]
+	end)
+	return success
+end
+
+if not isfolder("Exceros Hub") then
+	makefolder("Exceros Hub")
+	
+	local SettingsData = {
+		TermsAgreement = false,
+	}
+
+	local encoded = encodeData(SettingsData)
+	if encoded then
+		writefile("Exceros Hub/CompletedSettings.txt", encoded)
+	else
+		error("Failed to encode data")
+	end
+end
+
+-- ui for tos agreement
+local function LoadLoader()
+    local is_Loaded = false
+    local is_Timer = 0
+    do
+        local INIT = Instance.new("ScreenGui")
+        local MainFrame = Instance.new("Frame")
+        local UICorner = Instance.new("UICorner")
+        local elements = Instance.new("Folder")
+        local loader = Instance.new("ImageButton")
+        local TextLabel = Instance.new("TextLabel")
+        local UICorner_2 = Instance.new("UICorner")
+        local shadowHolder = Instance.new("Frame")
+        local umbraShadow = Instance.new("ImageLabel")
+        local penumbraShadow = Instance.new("ImageLabel")
+        local ambientShadow = Instance.new("ImageLabel")
+
+        --Properties:
+
+        INIT.Name = "INIT"
+        INIT.Parent = game:GetService("CoreGui")
+        INIT.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+        MainFrame.Name = "MainFrame"
+        MainFrame.Parent = INIT
+        MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+        MainFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        MainFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+        MainFrame.BorderSizePixel = 0
+        MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+        MainFrame.Size = UDim2.new(0, 400, 0, 200)
+
+        UICorner.Parent = MainFrame
+
+        elements.Name = "elements"
+        elements.Parent = MainFrame
+
+        loader.Name = "loader"
+        loader.Parent = elements
+        loader.BackgroundTransparency = 1.000
+        loader.LayoutOrder = 8
+        loader.Position = UDim2.new(0.4375, 0, 0.675000012, 0)
+        loader.Size = UDim2.new(0, 50, 0, 50)
+        loader.ZIndex = 2
+        loader.Image = "rbxassetid://3926305904"
+        loader.ImageRectOffset = Vector2.new(124, 684)
+        loader.ImageRectSize = Vector2.new(36, 36)
+
+        TextLabel.Parent = elements
+        TextLabel.BackgroundColor3 = Color3.fromRGB(40,40,40)
+        TextLabel.BorderColor3 = Color3.fromRGB(0, 0, 0)
+        TextLabel.BorderSizePixel = 0
+        TextLabel.Position = UDim2.new(0.125, 0, 0.104999997, 0)
+        TextLabel.Size = UDim2.new(0, 300, 0, 101)
+        TextLabel.Font = Enum.Font.Code
+        TextLabel.Text = "Loading Exceros..."
+        TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        TextLabel.TextSize = 24.000
+
+        UICorner_2.Parent = TextLabel
+
+        shadowHolder.Name = "shadowHolder"
+        shadowHolder.Parent = elements
+        shadowHolder.BackgroundTransparency = 1.000
+        shadowHolder.Position = UDim2.new(-0.0425000004, 0, 0, 0)
+        shadowHolder.Size = UDim2.new(1.04250002, 0, 1.06500006, 0)
+        shadowHolder.ZIndex = 0
+
+        umbraShadow.Name = "umbraShadow"
+        umbraShadow.Parent = shadowHolder
+        umbraShadow.AnchorPoint = Vector2.new(0.5, 0.5)
+        umbraShadow.BackgroundTransparency = 1.000
+        umbraShadow.Position = UDim2.new(0.5, 0, 0.5, 2)
+        umbraShadow.Size = UDim2.new(1, 4, 1, 4)
+        umbraShadow.ZIndex = 0
+        umbraShadow.Image = "rbxassetid://1316045217"
+        umbraShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+        umbraShadow.ImageTransparency = 0.860
+        umbraShadow.ScaleType = Enum.ScaleType.Slice
+        umbraShadow.SliceCenter = Rect.new(10, 10, 118, 118)
+
+        penumbraShadow.Name = "penumbraShadow"
+        penumbraShadow.Parent = shadowHolder
+        penumbraShadow.AnchorPoint = Vector2.new(0.5, 0.5)
+        penumbraShadow.BackgroundTransparency = 1.000
+        penumbraShadow.Position = UDim2.new(0.5, 0, 0.5, 2)
+        penumbraShadow.Size = UDim2.new(1, 4, 1, 4)
+        penumbraShadow.ZIndex = 0
+        penumbraShadow.Image = "rbxassetid://1316045217"
+        penumbraShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+        penumbraShadow.ImageTransparency = 0.880
+        penumbraShadow.ScaleType = Enum.ScaleType.Slice
+        penumbraShadow.SliceCenter = Rect.new(10, 10, 118, 118)
+
+        ambientShadow.Name = "ambientShadow"
+        ambientShadow.Parent = shadowHolder
+        ambientShadow.AnchorPoint = Vector2.new(0.5, 0.5)
+        ambientShadow.BackgroundTransparency = 1.000
+        ambientShadow.Position = UDim2.new(0.5, 0, 0.5, 2)
+        ambientShadow.Size = UDim2.new(1, 4, 1, 4)
+        ambientShadow.ZIndex = 0
+        ambientShadow.Image = "rbxassetid://1316045217"
+        ambientShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+        ambientShadow.ImageTransparency = 0.880
+        ambientShadow.ScaleType = Enum.ScaleType.Slice
+        ambientShadow.SliceCenter = Rect.new(10, 10, 118, 118)
+
+
+
+        MainFrame.Visible = false
+        MainFrame.Size = UDim2.new(0,1,0,1)
+        for i,v in pairs(MainFrame.elements:GetDescendants()) do
+            pcall(function()
+                v.TextTransparency = 1
+                v.BackgroundTransparency = 1
+            end)
+        end
+
+        local def = UDim2.new(0, 400, 0, 200)
+
+        task.wait(3)
+        MainFrame.Visible = true
+        MainFrame.elements.loader.Visible = false
+        MainFrame:TweenSize(UDim2.new(0, 400, 0, 1), Enum.EasingDirection.Out, Enum.EasingStyle.Quint, 1.5, true, function() 
+            MainFrame:TweenSize(def, Enum.EasingDirection.Out, Enum.EasingStyle.Quint, 1.5, true, function() 
+                for i,v in pairs(elements:GetDescendants()) do
+                    if hasProperty(v, "BackgroundTransparency") and not string.find(tostring(v):lower(), "shadow") and tostring(v) ~= "loader" then
+                        TweenService:Create(v, TweenInfo.new(1.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out, 0, false, 0), {BackgroundTransparency = 0}):Play()
+                    end
+                    if hasProperty(v, "TextTransparency") then
+                        TweenService:Create(v, TweenInfo.new(1.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out, 0, false, 0), {TextTransparency = 0}):Play()
+                    end
+                end
+                loader.Visible = true
+            end)
+        end)
+        local Index = 0
+        task.spawn(function()
+            while not is_Loaded do
+                if is_Loaded then break end
+                if loader and loader.Visible == true then
+                    loader.Rotation += 1
+                end
+                task.wait()
+            end
+        end)
+
+        task.spawn(function()
+            for i = 1, 1000 do
+                if is_Loaded then break end
+                if TextLabel then
+                    Index = Index + 1
+                    if Index == 1 then
+                        TextLabel.Text = "Loading Game."
+                    elseif Index == 2 then
+                        TextLabel.Text = "Loading Game.."
+                    elseif Index == 3 then
+                        TextLabel.Text = "Loading Game..."
+                    elseif Index > 3 then
+                        Index = 0
+                    end
+                end
+                task.wait(1)
+            end
+        end)
+
+        -- find game here
+        if (game and game.PlaceId == 8821374215) then -- Saisei loader
+            is_Loaded = true
+            TextLabel.Text = "Loading Saisei.lua"
+
+            -- LOAD THE GAME HERE WTF NIGGA
+            
+        end
+
+    end
+end
+
+local function LoadTermsOfService()
+    do
+        local TOS = Instance.new("ScreenGui")
+        local MainFrame = Instance.new("Frame")
+        local UICorner = Instance.new("UICorner")
+        local elements = Instance.new("Folder")
+        local Decline = Instance.new("TextButton")
+        local UICorner_2 = Instance.new("UICorner")
+        local Confirm = Instance.new("TextButton")
+        local UICorner_3 = Instance.new("UICorner")
+        local TOS_HEADER = Instance.new("TextLabel")
+        local UICorner_4 = Instance.new("UICorner")
+        local TOS_BODY = Instance.new("TextLabel")
+        local UICorner_5 = Instance.new("UICorner")
+        local shadowHolder = Instance.new("Frame")
+        local umbraShadow = Instance.new("ImageLabel")
+        local penumbraShadow = Instance.new("ImageLabel")
+        local ambientShadow = Instance.new("ImageLabel")
+        TOS.Name = "TOS"
+        TOS.Parent = game:GetService("CoreGui")
+        TOS.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        TOS.ResetOnSpawn = false
+        MainFrame.Name = "MainFrame"
+        MainFrame.Parent = TOS
+        MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+        MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        MainFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+        MainFrame.BorderSizePixel = 0
+        MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+        MainFrame.Size = UDim2.new(0, 587, 0, 435)
+        MainFrame.Visible = false
+        UICorner.Parent = MainFrame
+        elements.Name = "elements"
+        elements.Parent = MainFrame
+        Decline.Name = "Decline"
+        Decline.Parent = elements
+        Decline.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        Decline.BorderColor3 = Color3.fromRGB(0, 0, 0)
+        Decline.BorderSizePixel = 0
+        Decline.Position = UDim2.new(0.508944213, 0, 0.810000062, 0)
+        Decline.Size = UDim2.new(0.463373095, 0, 0.165517241, 0)
+        Decline.Font = Enum.Font.Code
+        Decline.Text = "Decline"
+        Decline.TextColor3 = Color3.fromRGB(238, 35, 35)
+        Decline.TextSize = 39.000
+        UICorner_2.Parent = Decline
+        Confirm.Name = "Confirm"
+        Confirm.Parent = elements
+        Confirm.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        Confirm.BorderColor3 = Color3.fromRGB(25, 25, 25)
+        Confirm.BorderSizePixel = 0
+        Confirm.Position = UDim2.new(0.0232850686, 0, 0.810000062, 0)
+        Confirm.Size = UDim2.new(0.463373095, 0, 0.165517241, 0)
+        Confirm.Font = Enum.Font.Code
+        Confirm.Text = "Accept"
+        Confirm.TextColor3 = Color3.fromRGB(21, 226, 69)
+        Confirm.TextSize = 39.000
+        Confirm.TextStrokeColor3 = Color3.fromRGB(255, 255, 255)
+        Confirm.TextWrapped = true
+        UICorner_3.Parent = Confirm
+        TOS_HEADER.Name = "TOS_HEADER"
+        TOS_HEADER.Parent = elements
+        TOS_HEADER.Active = true
+        TOS_HEADER.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        TOS_HEADER.BorderColor3 = Color3.fromRGB(0, 0, 0)
+        TOS_HEADER.BorderSizePixel = 0
+        TOS_HEADER.Position = UDim2.new(0.0232850686, 0, 0.0199999679, 0)
+        TOS_HEADER.Size = UDim2.new(0.950596273, 0, 0.0965517238, 0)
+        TOS_HEADER.Font = Enum.Font.Code
+        TOS_HEADER.Text = "Terms of Service"
+        TOS_HEADER.TextColor3 = Color3.fromRGB(255, 255, 255)
+        TOS_HEADER.TextSize = 24.000
+        UICorner_4.Parent = TOS_HEADER
+        TOS_BODY.Name = "TOS_BODY"
+        TOS_BODY.Parent = elements
+        TOS_BODY.Active = true
+        TOS_BODY.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        TOS_BODY.BorderColor3 = Color3.fromRGB(0, 0, 0)
+        TOS_BODY.BorderSizePixel = 0
+        TOS_BODY.Position = UDim2.new(0.0232850686, 0, 0.140000015, 0)
+        TOS_BODY.Size = UDim2.new(0.950596273, 0, 0.641379297, 0)
+        TOS_BODY.Font = Enum.Font.Code
+        TOS_BODY.Text = "By using this script you agree to your HWID, IP, USERID and other information to be collected for the security of the script. You also agree to the script's terms of service included in the discord."
+        TOS_BODY.TextColor3 = Color3.fromRGB(255, 255, 255)
+        TOS_BODY.TextSize = 16.000
+        TOS_BODY.TextWrapped = true
+        TOS_BODY.TextYAlignment = Enum.TextYAlignment.Top
+        UICorner_5.Parent = TOS_BODY
+        shadowHolder.Name = "shadowHolder"
+        shadowHolder.Parent = elements
+        shadowHolder.BackgroundTransparency = 1.000
+        shadowHolder.Position = UDim2.new(-0.0238500852, 0, 0, 0)
+        shadowHolder.Size = UDim2.new(1.02400005, 0, 1.0390805, 0)
+        shadowHolder.ZIndex = 0
+        umbraShadow.Name = "umbraShadow"
+        umbraShadow.Parent = shadowHolder
+        umbraShadow.AnchorPoint = Vector2.new(0.5, 0.5)
+        umbraShadow.BackgroundTransparency = 1.000
+        umbraShadow.Position = UDim2.new(0.5, 0, 0.5, 2)
+        umbraShadow.Size = UDim2.new(1, 4, 1, 4)
+        umbraShadow.ZIndex = 0
+        umbraShadow.Image = "rbxassetid://1316045217"
+        umbraShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+        umbraShadow.ImageTransparency = 0.860
+        umbraShadow.ScaleType = Enum.ScaleType.Slice
+        umbraShadow.SliceCenter = Rect.new(10, 10, 118, 118)
+        penumbraShadow.Name = "penumbraShadow"
+        penumbraShadow.Parent = shadowHolder
+        penumbraShadow.AnchorPoint = Vector2.new(0.5, 0.5)
+        penumbraShadow.BackgroundTransparency = 1.000
+        penumbraShadow.Position = UDim2.new(0.5, 0, 0.5, 2)
+        penumbraShadow.Size = UDim2.new(1, 4, 1, 4)
+        penumbraShadow.ZIndex = 0
+        penumbraShadow.Image = "rbxassetid://1316045217"
+        penumbraShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+        penumbraShadow.ImageTransparency = 0.880
+        penumbraShadow.ScaleType = Enum.ScaleType.Slice
+        penumbraShadow.SliceCenter = Rect.new(10, 10, 118, 118)
+    
+        ambientShadow.Name = "ambientShadow"
+        ambientShadow.Parent = shadowHolder
+        ambientShadow.AnchorPoint = Vector2.new(0.5, 0.5)
+        ambientShadow.BackgroundTransparency = 1.000
+        ambientShadow.Position = UDim2.new(0.5, 0, 0.5, 2)
+        ambientShadow.Size = UDim2.new(1, 4, 1, 4)
+        ambientShadow.ZIndex = 0
+        ambientShadow.Image = "rbxassetid://1316045217"
+        ambientShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+        ambientShadow.ImageTransparency = 0.880
+        ambientShadow.ScaleType = Enum.ScaleType.Slice
+        ambientShadow.SliceCenter = Rect.new(10, 10, 118, 118)
+    
+    
+        MainFrame.Visible = false
+        MainFrame.Size = UDim2.new(0,1,0,1)
+        task.spawn(function()
+            for i,v in pairs(MainFrame.elements:GetDescendants()) do
+                pcall(function()
+                    v.TextTransparency = 1
+                    v.BackgroundTransparency = 1
+                end)
+            end
+        end)
+        local Original_Size = UDim2.new(0, 587, 0, 435)
+        task.delay(3, function()
+            MainFrame.Visible = true
+            MainFrame:TweenSize(UDim2.new(0, 587, 0, 1), Enum.EasingDirection.Out, Enum.EasingStyle.Quint, 1.5, true, function() 
+                MainFrame:TweenSize(UDim2.new(0, 587, 0, 435), Enum.EasingDirection.Out, Enum.EasingStyle.Quint, 1.5, true, function() 
+                    for i,v in pairs(MainFrame.elements:GetDescendants()) do
+                        if hasProperty(v, "BackgroundTransparency") and not string.find(tostring(v):lower(), "shadow") then
+                            TweenService:Create(v, TweenInfo.new(1.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out, 0, false, 0), {BackgroundTransparency = 0}):Play()
+                        end
+                        if hasProperty(v, "TextTransparency") then
+                            TweenService:Create(v, TweenInfo.new(1.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out, 0, false, 0), {TextTransparency = 0}):Play()
+                        end
+                    end
+                end)
+            end)
+            local C; C = Confirm.MouseButton1Click:Connect(function()
+                writefile("Exceros Hub/CompletedSettings.txt", encodeData({TermsAgreement = true}))
+                MainFrame.Parent:Destroy()
+                LoadLoader()
+                C:Disconnect()
+            end)
+            local D; D = Decline.MouseButton1Click:Connect(function()
+                print("Why :(")
+                MainFrame.Parent:Destroy()
+                D:Disconnect()
+            end)
+        end)
+    end
+end
+
+local decodedData = decodeData(readfile("Exceros Hub/CompletedSettings.txt"))
+
+if decodedData and typeof(decodedData) == "table" then
+    for i,v in pairs(decodedData) do
+        if tostring(i) == "TermsAgreement" then
+            if v == false then
+                LoadTermsOfService()
+            elseif v == true then
+                LoadLoader()
+            end
+        end
+    end
+end
