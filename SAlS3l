@@ -1,0 +1,925 @@
+if not game.IsLoaded then
+    game.IsLoaded:Wait()
+end
+
+local Interactables = workspace:WaitForChild("Interactables")
+
+local RepoForUi = 'https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/'
+
+local NotificationLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/Paupxx/Scripts/main/Notification%20Library.lua"))()
+local Library = loadstring(game:HttpGet(RepoForUi .. 'Library.lua'))()
+local ThemeManager = loadstring(game:HttpGet(RepoForUi .. 'addons/ThemeManager.lua'))()
+local SaveManager = loadstring(game:HttpGet(RepoForUi .. 'addons/SaveManager.lua'))()
+
+local Window = Library:CreateWindow({
+    Title = "Exceros Hub || Saisei",
+    Center = true,
+    AutoShow = true,
+    TabPadding = 8,
+    MenuFadeTime = 0.2
+})
+
+-- tabs
+local Tabs = {
+    Main = Window:AddTab('Main'),
+    ['UI Settings'] = Window:AddTab('UI Settings'),
+}
+
+-- groupbox
+local CombatGroup = Tabs.Main:AddLeftGroupbox('Combat')
+local Teleportation = Tabs.Main:AddRightGroupbox('Teleports')
+local LocalGroupbox = Tabs.Main:AddLeftGroupbox("Local")
+local WorldGroup = Tabs.Main:AddRightGroupbox("World")
+local EspGroupBox = Tabs.Main:AddRightGroupbox("ESP")
+local SpectateGroupbox = Tabs.Main:AddRightGroupbox("Misc")
+local Discordbox = Tabs.Main:AddRightGroupbox("Discord")
+
+-- Services
+local Players = game:GetService('Players')
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService('ReplicatedStorage')
+local Lighting = game:GetService("Lighting")
+local UserInputService = game:GetService("UserInputService")
+
+-- | Main Script | -- 
+local Player = Players.LocalPlayer
+local Connections = {}
+
+-- | Variables | --
+local KillAura = false
+local KillAuraRange = false
+local HBE = false
+local HBESize = 0
+local HBEVisible = false
+local FastAnimations = false
+local WalkSpeedToggled = false
+local WalkSpeedValue = 18
+local JumpPowerToggled = false
+local JumpPowerValue = 50
+local InfiniteJump = false
+local FullBright = false
+local ClimbBoost = 0
+local InfClimb = false
+local ChestEspToggle = false
+local AutoCollectChest = false
+local PlayerESPToggle = false
+local PlayerESPColor = Color3.fromRGB(148, 50, 205)
+local HealthESP = false
+local UseNoClip = false
+local UseSpectating = false
+local CurrentlySpectating = nil
+local InfStamina = false
+local InfBlood = false
+local InfPosture = false
+local AlwaysAttack = false
+local ModNotify = true
+
+-- | Hooks | --
+--[[
+local Hook; Hook = hookmetamethod(game, "__namecall", LPH_NO_VIRTUALIZE(function(Self, ...)
+    if not checkcaller() and typeof(Self) == "Instance" and DamageMultiplierToggle then
+        if (getnamecallmethod() == "FireServer" or getnamecallmethod() == "fireServer") then
+            local Args = {...}
+            if Args[1] == "Damage" and typeof(Args[2]) == "string" then
+                local commonDamage = Args[2]
+                if tonumber(commonDamage) then
+                    local CalculateNewDamage = tonumber(commonDamage)*DamageMultiplier
+                    Args[2] = tostring(CalculateNewDamage)
+                    return Self.FireServer(Self, table.unpack(Args))
+                end
+            end
+        end
+    end
+    return Hook(Self, ...)
+end))--]]
+
+Connections.MainLoop = RunService.RenderStepped:Connect(LPH_JIT_MAX(function()
+    if HBE then
+        for i,player in pairs(Players:GetPlayers()) do
+            if player and player ~= Player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                player.Character:FindFirstChild("HumanoidRootPart").Size = Vector3.new(HBESize,HBESize,HBESize)
+                if HBEVisible then
+                    player.Character:FindFirstChild("HumanoidRootPart").Transparency = 0.4
+                else
+                    player.Character:FindFirstChild("HumanoidRootPart").Transparency = 1
+                end
+            end
+        end
+    end
+    if Player.Character then
+        local Humanoid = Player.Character and Player.Character:FindFirstChildOfClass("Humanoid")
+        if Humanoid then
+            if FastAnimations then
+                for i,v in pairs(Humanoid:GetPlayingAnimationTracks()) do
+                    v:AdjustSpeed(9e9)
+                end
+            end
+            if WalkSpeedToggled then
+                Humanoid.WalkSpeed = WalkSpeedValue
+            end
+            if JumpPowerToggled then
+                Humanoid.UseJumpPower = true
+                Humanoid.JumpPower = JumpPowerValue
+            end
+        end -- end of hum check
+    end -- end of char check
+    if InfClimb then
+        local CanClimb = ReplicatedStorage:FindFirstChild("CanClimb") 
+        if CanClimb and CanClimb.Value == false then
+            CanClimb.Value = true
+        end
+    end
+    if FullBright then
+        Lighting.Brightness = 2
+        Lighting.ClockTime = 14
+        Lighting.FogEnd = 100000
+        Lighting.FogStart = 100000
+        Lighting.GlobalShadows = false
+        Lighting.OutdoorAmbient = Color3.fromRGB(128,128,128)
+        pcall(function()
+            for i,v in pairs(Lighting:GetChildren()) do
+                if v.Enabled then v.Enabled = false end
+            end
+        end)
+    end
+    if InfStamina then
+        Player.Backpack.Stamina.Value = 100
+    end
+    if InfPosture then
+        Player.Backpack.Posture.Value = 0
+    end
+    if InfBlood then
+        Player.Backpack.Blood.Value = 0
+    end
+    if AlwaysAttack then
+        Player.Backpack.PlayerCantAttack.Value = false
+        ReplicatedStorage.Attacking.Value = false
+    end
+end))
+
+-- | Toggles etc | --
+
+local function GetPlayersInRange(Range)
+    local InRange = {}
+    for i,v in pairs(Players:GetPlayers()) do
+        if v and v ~= Player and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character:FindFirstChildOfClass("Humanoid") and v.Character:FindFirstChildOfClass("Humanoid").Health ~= 0 then
+            local Distance = (Player.Character.HumanoidRootPart.Position-v.Character.HumanoidRootPart.Position).Magnitude
+            if Distance <= Range then
+                table.insert(InRange, v.Character)
+            end
+        end
+    end
+    return InRange
+end
+
+local getDamageRemote; getDamageRemote = hookmetamethod(game, "__namecall", LPH_NO_VIRTUALIZE(function(self, ...)
+    if not checkcaller() and typeof(self) == "Instance" and KillAura then
+        if (getnamecallmethod() == "fireServer" or getnamecallmethod() == "FireServer") then
+            local Args = {...}
+            if Args[1] == "Hit" and typeof(Args[2]) == "table" then
+                Args[2] = GetPlayersInRange(tonumber(KillAuraRange))
+                return self.FireServer(self, table.unpack(Args))
+            end
+        end
+    end
+    return getDamageRemote(self,...)
+end))
+
+CombatGroup:AddToggle('Kill-Aura', {
+    Text = 'Kill-Aura',
+    Default = false,
+    Tooltip = 'allows u to hit anyone near u', 
+    Callback = function(Value)
+        KillAura = Value
+    end
+})
+
+CombatGroup:AddSlider('Kill-Aura Range', {
+    Text = 'Kill-Aura Range',
+    Default = 1,
+    Min = 0,
+    Max = 20,
+    Rounding = 0,
+    Compact = false,
+
+    Callback = function(Value)
+        KillAuraRange = Value
+    end
+})--]]
+
+CombatGroup:AddDivider()
+
+CombatGroup:AddToggle('Hitbox Expander', {
+    Text = 'Hitbox Expander',
+    Default = false,
+    Tooltip = 'expands other players hitboxs', 
+    Callback = function(Value)
+        HBE = Value
+    end
+})
+
+CombatGroup:AddSlider('Hitbox Expander Size', {
+    Text = 'Hitbox Expander',
+    Default = 0,
+    Min = 0,
+    Max = 12,
+    Rounding = 0,
+    Compact = false,
+
+    Callback = function(Value)
+        HBESize = Value
+    end
+})
+
+CombatGroup:AddToggle('Hitbox Expander Visible', {
+    Text = 'Hitbox Expander Visible',
+    Default = false,
+    Tooltip = 'visible other people hrp', 
+    Callback = function(Value)
+        HBEVisible = Value
+    end
+})
+
+CombatGroup:AddDivider()
+
+CombatGroup:AddToggle('Fast Animations', {
+    Text = 'Fast Animations',
+    Default = false,
+    Tooltip = 'makes anims super fast that it does so much damage OL', 
+    Callback = function(Value)
+        FastAnimations = Value
+    end
+})
+
+CombatGroup:AddToggle('Infinite Stamina', {
+    Text = 'Infinite Stamina',
+    Default = false,
+    Tooltip = 'infinite stamina', 
+    Callback = function(Value)
+        InfStamina = Value
+    end
+})
+
+CombatGroup:AddToggle('Infinite Posture', {
+    Text = 'Infinite Posture',
+    Default = false,
+    Tooltip = 'infinite Posture', 
+    Callback = function(Value)
+        InfPosture = Value
+    end
+})
+
+CombatGroup:AddToggle('Infinite Blood', {
+    Text = 'Infinite Blood',
+    Default = false,
+    Tooltip = 'infinite Blood', 
+    Callback = function(Value)
+        InfBlood = Value
+    end
+})
+
+CombatGroup:AddToggle('No Attack Stun', {
+    Text = 'No Attack Stun',
+    Default = false,
+    Tooltip = 'no attack stun', 
+    Callback = function(Value)
+        AlwaysAttack = Value
+    end
+})
+
+
+-- local player section
+
+LocalGroupbox:AddToggle('Walk Speed', {
+    Text = 'Walk Speed',
+    Default = false,
+    Tooltip = 'Modifies your walkspeed', 
+    Callback = function(Value)
+        WalkSpeedToggled = Value
+    end
+})
+
+LocalGroupbox:AddSlider('Walk Speed Value', {
+    Text = 'Walk Speed Value',
+    Default = 18,
+    Min = 18,
+    Max = 200,
+    Rounding = 0,
+    Compact = false,
+
+    Callback = function(Value)
+        WalkSpeedValue = Value
+    end
+})
+
+LocalGroupbox:AddToggle('Jump Power', {
+    Text = 'Jump Power',
+    Default = false,
+    Tooltip = 'Modifies your jump power', 
+    Callback = function(Value)
+        JumpPowerToggled = Value
+    end
+})
+
+LocalGroupbox:AddSlider('Jump Power Value', {
+    Text = 'Jump Power Value',
+    Default = 50,
+    Min = 50,
+    Max = 500,
+    Rounding = 0,
+    Compact = false,
+
+    Callback = function(Value)
+        JumpPowerValue = Value
+    end
+})
+
+LocalGroupbox:AddToggle('Character Noclip', {
+    Text = 'Character Noclip',
+    Default = false,
+    Tooltip = 'no collision wowzer', 
+    Callback = function(Value)
+        UseNoClip = Value
+    end
+})
+
+
+LocalGroupbox:AddToggle('Infinite Jump', {
+    Text = 'Infinite Jump',
+    Default = false,
+    Tooltip = 'jump infinite times', 
+    Callback = function(Value)
+        InfiniteJump = Value
+    end
+})
+
+LocalGroupbox:AddSlider('Climb Boost', {
+    Text = 'Climb Boost',
+    Default = 0,
+    Min = 0,
+    Max = 250,
+    Rounding = 0,
+    Compact = false,
+
+    Callback = function(Value)
+        ClimbBoost = Value
+    end
+})
+
+LocalGroupbox:AddToggle('Infinite Climb', {
+    Text = 'Infinite Climb',
+    Default = false,
+    Tooltip = 'infinite climb', 
+    Callback = function(Value)
+        InfClimb = Value
+    end
+})
+
+-- world seciton
+WorldGroup:AddToggle('Full Bright', {
+    Text = 'Full Bright',
+    Default = false,
+    Tooltip = 'Full Bright', 
+    Callback = function(Value)
+        FullBright = Value
+    end
+})
+
+-- esp
+EspGroupBox:AddToggle('Chest ESP', {
+    Text = 'Chest ESP',
+    Default = false,
+    Tooltip = 'shows silver/bronze chests lol', 
+    Callback = function(Value)
+        ChestEspToggle = Value
+    end
+})
+
+EspGroupBox:AddToggle('Auto-Collect Chest', {
+    Text = 'Auto-Collect Chest',
+    Default = false,
+    Tooltip = 'collects chests ye', 
+    Callback = function(Value)
+        AutoCollectChest = Value
+    end
+})
+
+EspGroupBox:AddDivider()
+
+EspGroupBox:AddToggle('Player ESP', {
+    Text = 'Player ESP',
+    Default = false,
+    Tooltip = 'shows player esp', 
+    Callback = function(Value)
+        PlayerESPToggle = Value
+    end
+})
+
+EspGroupBox:AddToggle('Show Health', {
+    Text = 'Show Health',
+    Default = false,
+    Tooltip = 'show health fr', 
+    Callback = function(Value)
+        HealthESP = Value
+    end
+})
+
+EspGroupBox:AddLabel('Player ESP Color'):AddColorPicker('Player ESP Color', {
+    Default = Color3.fromRGB(148, 50, 205), 
+    Title = 'Choose Player ESP Color', 
+    Transparency = nil,
+
+    Callback = function(Value)
+        PlayerESPColor = Value
+    end
+})
+
+-- chest esp section
+local ChestESP = {}
+
+local function CompareVectorToCFrame(part1,part2)
+	return math.floor((part1.Position-part2:GetModelCFrame().Position).Magnitude)
+end
+
+local function AddToTable(model)
+	local Con1
+	
+	local totalModelData = {}
+	
+	local TextDrawing = Drawing.new("Text")
+	TextDrawing.Size = 16
+	TextDrawing.Visible = false
+	TextDrawing.Outline = true
+	TextDrawing.Center = true
+	TextDrawing.Text = tostring(model)
+	
+	local Color = Color3.fromRGB(0,0,0)
+	if tostring(model) == "Silver" then
+		Color = Color3.fromRGB(99, 99, 99)
+	elseif tostring(model) == "Bronze" then
+		Color = Color3.fromRGB(205, 127, 50)
+    elseif tostring(model) == "Gold" then
+        Color = Color3.fromRGB(205, 171, 50)
+	end
+	
+	TextDrawing.Color = Color
+	
+	totalModelData.Drawing = TextDrawing
+	totalModelData.Model = model
+	totalModelData.Name = tostring(model)
+	table.insert(ChestESP, totalModelData)
+	
+	Con1 = model.AncestryChanged:Connect(function(old,new)
+		if old == nil or new == nil then
+			model:Destroy()
+			Con1:Disconnect()
+		end
+	end)
+end
+
+RunService.RenderStepped:Connect(LPH_JIT_MAX(function()
+	for i,v in pairs(ChestESP) do
+		if v.Model ~= nil and v.Drawing ~= nil then
+			--[[if v.Model:FindFirstChild("Item") then
+				local Item = v.Model.Item
+				if Item then
+					local ScreenPos, OnScreen = workspace.CurrentCamera:WorldToScreenPoint(Item.Position)
+					if OnScreen then
+						v.Drawing.Visible = true
+						v.Drawing.Position = Vector2.new(ScreenPos.X,ScreenPos.Y)
+					else
+						v.Drawing.Visible = false
+					end
+					
+				end
+			else--]]
+				if ChestEspToggle then
+					local ScreenPos, OnScreen = workspace.CurrentCamera:WorldToScreenPoint(v.Model:GetModelCFrame().Position)
+					if OnScreen then
+						v.Drawing.Text = v.Name .. " [" .. tostring(CompareVectorToCFrame(Player.Character.HumanoidRootPart, v.Model)) .. "m]" 
+						v.Drawing.Visible = true
+						v.Drawing.Position = Vector2.new(ScreenPos.X,ScreenPos.Y)
+					else
+						v.Drawing.Visible = false
+					end
+					if v.Model:FindFirstChildOfClass("ClickDetector") and AutoCollectChest then
+						if (Player.Character.HumanoidRootPart.Position-v.Model:GetModelCFrame().Position).Magnitude < 12 then
+							fireclickdetector(v.Model:FindFirstChildOfClass("ClickDetector"))
+						end
+					end
+				else
+					v.Drawing.Visible = false
+				--end
+			end
+		else
+			v.Drawing.Visible = false
+			v.Drawing:Remove()
+			table.remove(ChestESP, i)
+		end
+	end
+end))
+
+for i,v in pairs(Interactables:GetChildren()) do
+	if tostring(v) == "Silver" or tostring(v) == "Bronze" or tostring(v) == "Gold" then
+		AddToTable(v)
+	end
+end
+Interactables.ChildAdded:Connect(function(child)
+	if tostring(child) == "Silver" or tostring(child) == "Bronze" or tostring(child) == "Gold" then
+		AddToTable(child)
+	end
+end)
+Interactables.ChildRemoved:Connect(function(child)
+	for i,v in pairs(ChestESP) do
+		if v.Model == child then
+			v.Model = nil
+		end
+	end
+end)
+
+-- player esp
+local PlayerESP = {}
+
+local function AddToTable2(model)
+	local Con1
+	
+	local totalModelData = {}
+	
+	for i,v in pairs(PlayerESP) do
+		if tostring(v.Name) == tostring(model) then
+			v.Drawing.Visible = false
+			v.Drawing:Remove()
+			table.remove(PlayerESP, i)
+		end
+	end
+	
+	local TextDrawing = Drawing.new("Text")
+	TextDrawing.Size = 16
+	TextDrawing.Visible = false
+	TextDrawing.Outline = true
+	TextDrawing.Center = true
+	TextDrawing.Text = tostring(model)
+	TextDrawing.Color = PlayerESPColor
+	
+	totalModelData.Drawing = TextDrawing
+	totalModelData.Model = model
+	totalModelData.Name = tostring(model)
+	
+	table.insert(PlayerESP, totalModelData)
+end
+
+RunService.RenderStepped:Connect(LPH_JIT_MAX(function()
+	for i,v in pairs(PlayerESP) do
+		if v.Model ~= nil and v.Drawing ~= nil then
+			if v.Model and v.Model:FindFirstChild("HumanoidRootPart") then
+				local ScreenPos, OnScreen = workspace.CurrentCamera:WorldToScreenPoint(v.Model:FindFirstChild("HumanoidRootPart").Position+Vector3.new(0,3,0))
+				if OnScreen and PlayerESPToggle then
+                    if HealthESP and v.Model:FindFirstChildOfClass("Humanoid") then
+                        local healthString = tostring(math.floor(v.Model:FindFirstChildOfClass("Humanoid").Health)) .. "/" .. tostring(math.floor(v.Model:FindFirstChildOfClass("Humanoid").MaxHealth))
+                        v.Drawing.Text = v.Name .. " [" .. tostring(CompareVectorToCFrame(Player.Character.HumanoidRootPart, v.Model)) .. "m]" .. " [" .. healthString .. "]"                         
+                    else
+                        v.Drawing.Text = v.Name .. " [" .. tostring(CompareVectorToCFrame(Player.Character.HumanoidRootPart, v.Model)) .. "m]"                         
+                    end
+                    v.Drawing.Color = PlayerESPColor
+					v.Drawing.Visible = true
+					v.Drawing.Position = Vector2.new(ScreenPos.X,ScreenPos.Y)
+				else
+					v.Drawing.Visible = false
+				end
+			else
+				v.Drawing.Visible = false
+			end
+		else
+			v.Drawing.Visible = false
+			v.Drawing:Remove()
+			table.remove(ChestESP, i)
+		end
+	end
+end))
+
+for i,v in pairs(Players:GetPlayers()) do
+	if v ~= Player then
+		if v.Character then
+			AddToTable2(v.Character)
+		end
+		v.CharacterAdded:Connect(function(char)
+			AddToTable2(char)
+		end)
+	end
+end
+Players.PlayerAdded:Connect(function(p)
+	p.CharacterAdded:Connect(function(char)
+		AddToTable2(char)
+	end)
+end)
+Players.PlayerRemoving:Connect(function(p)
+	for i,v in pairs(PlayerESP) do
+		if tostring(v.Name) == tostring(p) then
+			v.Drawing.Visible = false
+			v.Drawing:Remove()
+			table.remove(PlayerESP, i)
+		end
+	end
+end)
+
+-- noclip
+local SavedBaseInstances = {}
+Connections.NoclipLoop = RunService.Stepped:Connect(function()
+    if Player.Character and UseNoClip then
+        for i,v in pairs(Player.Character:GetDescendants()) do
+            if v:IsA("BasePart") and v.CanCollide == true then
+                if not SavedBaseInstances[v] then
+                    SavedBaseInstances[v] = v
+                end
+                v.CanCollide = false
+            end
+        end
+    else
+        if Player.Character then
+            for i,v in pairs(Player.Character:GetDescendants()) do
+                if SavedBaseInstances[v] then
+                    SavedBaseInstances[v].CanCollide = true
+                    table.remove(SavedBaseInstances, table.find(SavedBaseInstances, v))
+                end
+            end
+        end
+    end
+end)
+-- infintue jump
+local infJump
+local infJumpDebounce = false
+infJump = UserInputService.JumpRequest:Connect(function()
+    if not infJumpDebounce and InfiniteJump then
+        infJumpDebounce = true
+        Player.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+        task.wait()
+        infJumpDebounce = false
+    end
+end)
+
+-- teleport area
+
+local Areas = workspace:WaitForChild("Areas", 20)
+local Final = {}
+local TeleportSpots = {}
+for i,v in pairs(Areas:GetChildren()) do
+    if not table.find(Final, tostring(v.Area.Value)) then
+        table.insert(Final, tostring(v.Area.Value))
+    end
+    if not TeleportSpots[tostring(v.Area.Value)] and not table.find(TeleportSpots, tostring(v.Area.Value)) then 
+        TeleportSpots[tostring(v.Area.Value)] = v.Position
+    end
+end
+local LastTp = Final[1]
+local SetValueOfIndex = false
+
+Teleportation:AddDropdown('Teleport To Area', {
+    Values = Final,
+    Default = 1, -- number index of the value / string
+    Multi = false, -- true / false, allows multiple choices to be selected
+
+    Text = 'Teleport To Area',
+    Tooltip = 'teleports u to area wow', -- Information shown when you hover over the dropdown
+
+    Callback = function(Value)
+        if not SetValueOfIndex then
+            if LastTp ~= TeleportSpots[tostring(Value)] then
+                Player.Character.HumanoidRootPart.CFrame = CFrame.new(TeleportSpots[tostring(Value)])
+                LastTp = TeleportSpots[tostring(Value)]
+            end
+        else
+            task.delay(1, function() SetValueOfIndex = false end)
+        end
+    end
+})
+
+Connections.AreaChildAdded = Areas.ChildAdded:Connect(function(child)
+    if child:WaitForChild("Area") then
+        if not table.find(Final, tostring(child.Area.Value)) then
+            table.insert(Final, tostring(child.Area.Value))
+        end
+        if not TeleportSpots[tostring(child.Area.Value)] and not table.find(TeleportSpots, tostring(child.Area.Value)) then 
+            TeleportSpots[tostring(child.Area.Value)] = child.Position
+        end
+        SetValueOfIndex = true
+        Options["Teleport To Area"]:SetValue(Final)
+    end
+end)
+
+Connections.AreaChildRemoved = Areas.ChildRemoved:Connect(function(child)
+    if child:FindFirstChild("Area") then
+        if TeleportSpots[tostring(child.Area.Value)] or table.find(TeleportSpots, tostring(child.Area.Value)) then
+            table.remove(TeleportSpots, table.find(TeleportSpots, tostring(child.Area.Value)))
+            TeleportSpots[tostring(child.Area.Value)] = nil
+        end
+        if Final[tostring(child.Area.Value)] or table.find(Final, tostring(child.Area.Value)) then
+            table.remove(Final, table.find(Final, tostring(child.Area.Value)))
+            Final[tostring(child.Area.Value)] = nil
+        end
+        SetValueOfIndex = true
+        Options["Teleport To Area"]:SetValue(Final)
+    end
+end)
+
+-- climb/dash boost
+local Hooking = false
+
+local climbBoostHook; climbBoostHook = hookmetamethod(game, "__newindex", LPH_NO_VIRTUALIZE(function(s,k,v)
+	if not checkcaller() and typeof(s) == "Instance" and not Hooking and ClimbBoost > 0 then
+		if tostring(k) == "Velocity" and s:IsA("BodyVelocity") and (v and type(v) == "vector" and v.Y and v.Y>=30) then
+			Hooking = true
+			s.Velocity = Vector3.new(0,ClimbBoost,0)
+			Hooking = false
+			return
+		end
+	end
+	return climbBoostHook(s,k,v)
+end))
+
+-- specatae
+local PlayersInGame = {}
+local SettingState = false
+
+for i,v in pairs(Players:GetPlayers()) do
+    table.insert(PlayersInGame, tostring(v))
+end
+Players.PlayerAdded:Connect(function(v)
+    table.insert(PlayersInGame, tostring(v))
+    SettingState = true
+    Options["Spectate Player"]:SetValue(PlayersInGame)
+    task.delay(0.5, function()
+        SettingState = false
+    end)
+end)
+Players.PlayerRemoving:Connect(function(player)
+    if table.find(PlayersInGame, tostring(player)) then
+        table.remove(PlayersInGame, table.find(PlayersInGame, tostring(player)))
+        SettingState = true
+        Options["Spectate Player"]:SetValue(PlayersInGame)
+        task.delay(0.5, function()
+            SettingState = false
+        end)
+    end
+end)
+
+SpectateGroupbox:AddToggle('Spectate Player Toggle', {
+    Text = 'Spectate Player Toggle',
+    Default = false,
+    Tooltip = 'enable spectating', 
+    Callback = function(Value)
+        UseSpectating = Value
+        if not UseSpectating then
+            workspace.CurrentCamera.CameraSubject = Player.Character:FindFirstChildOfClass("Humanoid")
+        end
+    end
+})
+
+SpectateGroupbox:AddDropdown('Spectate Player', {
+    Values = PlayersInGame,
+    Default = 1, -- number index of the value / string
+    Multi = false, -- true / false, allows multiple choices to be selected
+
+    Text = 'Spectate Player',
+    Tooltip = 'spectate player seelctor', -- Information shown when you hover over the dropdown
+
+    Callback = function(Value)
+        if UseSpectating and not SettingState then
+            local foundPlayer = Players[tostring(Value)]
+            if foundPlayer then
+                local char = foundPlayer.Character
+                if char then
+                    local humanoid = char:WaitForChild("Humanoid")
+                    if humanoid then
+                        workspace.CurrentCamera.CameraSubject = humanoid
+                    end
+                end
+            end
+        end
+    end
+})
+
+-- auto take all chests
+local ClickedCFrame = nil
+local Names = {
+    "Gold",
+    "Bronze",
+    "Silver",
+}
+SpectateGroupbox:AddButton({
+    Text = 'Collect All Chests',
+    Func = function()
+        if Player.Character and Player.Character.HumanoidRootPart then
+            ClickedCFrame = Player.Character.HumanoidRootPart.CFrame
+        end
+        local FoundChests = {}
+        for i,v in pairs(Interactables:GetChildren()) do
+            if table.find(Names, tostring(v)) and v then
+                table.insert(FoundChests, v)
+            end
+        end
+        repeat task.wait(0.5)
+            if FoundChests[1] then
+                local firstchest = FoundChests[1]
+                Player.Character.HumanoidRootPart.CFrame = firstchest:GetModelCFrame()
+                if firstchest:FindFirstChildOfClass("ClickDetector") then
+                    fireclickdetector(firstchest:FindFirstChildOfClass("ClickDetector"), 12)
+                    table.remove(FoundChests, 1)
+                end
+            end
+        until #FoundChests == 0
+        Player.Character.HumanoidRootPart.CFrame = ClickedCFrame
+        ClickedCFrame = nil
+    end,
+    DoubleClick = false,
+    Tooltip = 'collects all chests'
+})
+
+Discordbox:AddButton({
+    Text = "Copy Discord Link",
+    Func = function()
+        if setclipboard then
+            setclipboard(tostring('https://discord.gg/2BtXmsaXwT'))
+        end
+    end,
+    DoubleClick = false,
+    Tooltip = "join discord for help wow",
+})
+
+Discordbox:AddLabel('https://discord.gg/2BtXmsaXwT')
+
+SpectateGroupbox:AddToggle('Mod Notifier', {
+    Text = 'Mod Notifier',
+    Default = true,
+    Tooltip = 'mod notifiert', 
+    Callback = function(Value)
+        ModNotify = Value
+    end
+})
+
+local Mods = {
+    119859927, -- cindersouls
+    157219694, -- xx dive
+    3612304180, -- unemployed messiah
+    51362470, -- willowvis
+    706454089, -- bobby mcstew
+    145513929, -- swamppilled
+    90554915, -- the soggy and whatever
+    308568750, -- killicus
+    113204352, -- i hate pink 200
+    80455824, -- scronkly
+}
+
+Players.PlayerAdded:Connect(function(plr)
+    if table.find(Mods, plr.UserId) and ModNotify then
+        NotificationLibrary.AddNotification({
+            Text = "A moderator is in your server! [" .. tostring(plr) .. "]",
+            TimeColor = Color3.fromRGB(173, 150, 222),
+            Timer = 999,
+            AllowMouseClick = true,
+        })
+    end
+end)
+Players.PlayerRemoving:Connect(function(plr)
+    if table.find(Mods, plr.UserId) and ModNotify then
+        NotificationLibrary.AddNotification({
+            Text = "A moderator has left your server! [" .. tostring(plr) .. "]",
+            TimeColor = Color3.fromRGB(173, 150, 222),
+            Timer = 25,
+            AllowMouseClick = true,
+        })
+    end
+end)
+for i,plr in pairs(Players:GetPlayers()) do
+    if table.find(Mods, plr.UserId) and ModNotify then
+        NotificationLibrary.AddNotification({
+            Text = "A moderator is in your server! [" .. tostring(plr) .. "]",
+            TimeColor = Color3.fromRGB(173, 150, 222),
+            Timer = 999,
+            AllowMouseClick = true,
+        })
+    end
+end
+
+Library.KeybindFrame.Visible = false; -- todo: add a function for this
+
+Library:OnUnload(function()
+    for i,v in pairs(Connections) do v:Disconnect() end
+    Library.Unloaded = true
+end)
+
+local MenuGroup = Tabs['UI Settings']:AddLeftGroupbox('Menu')
+
+MenuGroup:AddButton('Unload', function() Library:Unload() end)
+MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', { Default = 'RightControl', NoUI = true, Text = 'Menu keybind' })
+
+Library.ToggleKeybind = Options.MenuKeybind -- Allows you to have a custom keybind for the menu
+
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({ 'MenuKeybind' })
+ThemeManager:SetFolder('Exceros Hub')
+SaveManager:SetFolder('Exceros Hub/Saisei')
+SaveManager:BuildConfigSection(Tabs['UI Settings'])
+ThemeManager:ApplyToTab(Tabs['UI Settings'])
+SaveManager:LoadAutoloadConfig()
